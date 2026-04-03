@@ -273,15 +273,16 @@ async function toggleRecord() {
 async function startRecord() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    // Choisir le meilleur format supporté
-    const mimes = ['audio/webm;codecs=opus','audio/webm','audio/ogg','audio/mp4'];
+    // Safari supporte mp4, Chrome/Firefox supportent webm
+    // On priorise webm (meilleur support Whisper), puis mp4 pour Safari
+    const mimes = ['audio/webm;codecs=opus','audio/webm','audio/mp4;codecs=mp4a','audio/mp4','audio/ogg'];
     const mime = mimes.find(m => MediaRecorder.isTypeSupported(m)) || '';
-    currentMime = mime || 'audio/webm';
+    currentMime = mime || 'audio/mp4'; // Safari fallback
     mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     audioChunks = [];
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = processAudio;
-    mediaRecorder.start(100);
+    mediaRecorder.start(250); // chunks plus grands = meilleure qualité sur Safari
     isRecording = true;
     setRecordUI(true);
   } catch(e) {
@@ -320,8 +321,8 @@ async function processAudio() {
 
     const res = await fetch(CONFIG.APPS_SCRIPT_URL + "?action=transcribe", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audio: base64, mimeType: currentMime })
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ audio: base64, mimeType: currentMime, token: "6,12,5,18,8,22,6,14,10,20,5,12,7,16" })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
@@ -413,8 +414,8 @@ async function pushToSheet() {
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL + "?action=push", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author, transcript: currentTranscript, tasks: currentTasks })
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ author, transcript: currentTranscript, tasks: currentTasks, token: "6,12,5,18,8,22,6,14,10,20,5,12,7,16" })
     });
     const d = await res.json();
     if (!d.success) throw new Error(d.error);
