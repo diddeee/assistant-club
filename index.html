@@ -193,9 +193,8 @@ header{
 
 <script>
 const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwyHrjWY3SWfJe9hN6LLoDwK3A__agA9NM6b7vzLoWPu3ayny0nHlpV9236MupvNNh8/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw9GzzzsoR7c0-eibS7nn23B5MGVL082c3F-72Gv7lI3EiqEh1pPop3oUzjqZ_IsHoD/exec",
   SHEET_URL: "https://docs.google.com/spreadsheets/d/1C7fd-YnyeYN9uzcdyInPAuLfXCpQ_Cf_lBpvaBfeRUE/edit",
-  TOKEN: "capsule2024tww",
   USERS: {"adia":"Adia","diabou":"Diabou","joanne":"Joanne"},
 };
 </script>
@@ -400,11 +399,21 @@ function playBip() {
 
 // ── API CALLS ─────────────────────────────────────────
 async function callScript(action, body) {
-  const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=' + action, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ ...body, action: action, token: CONFIG.TOKEN })
-  });
+  // Apps Script ne lit pas le body POST cross-origin → on passe tout en GET params
+  const payload = { ...body, token: CONFIG.TOKEN };
+  // Pour la transcription (audio en base64) on garde POST car trop long pour URL
+  if (action === 'transcribe') {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=transcribe&token=' + encodeURIComponent(CONFIG.TOKEN), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(JSON.stringify(payload))
+    });
+    return res.json();
+  }
+  const url = CONFIG.APPS_SCRIPT_URL
+    + '?action=' + action
+    + '&d=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, { method: 'GET' });
   return res.json();
 }
 
