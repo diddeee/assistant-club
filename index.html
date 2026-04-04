@@ -338,7 +338,6 @@ function saveName() {
 function setUser(name) {
   userName = name;
   document.getElementById('userBadge').textContent = name;
-  document.getElementById('authorBadge').textContent = name;
   document.getElementById('onboarding').style.display = 'none';
   switchMode('drive');
 }
@@ -483,8 +482,8 @@ async function processDriveWithText(text) {
 
   setDriveProcessing('Envoi au Sheet...');
   try {
-    await callScript('push', { author: userName, transcript: currentTranscript, tasks: currentTasks });
-  } catch(e) {}
+    await callScript('push', { author: userName, tasks: currentTasks });
+  } catch(e) { console.error('push error:', e); }
 
   // Bip + affichage résultat
   playBip();
@@ -603,7 +602,7 @@ async function processNormalWithText(text) {
   document.getElementById('normalStatus').textContent = 'Envoi...';
   try {
     await callScript('push', { author: userName, tasks: currentTasks });
-  } catch(e) {}
+  } catch(e) { console.error('push error:', e); }
 
   playBip();
   showNormalResult();
