@@ -193,7 +193,8 @@ header{
 
 <script>
 const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw9GzzzsoR7c0-eibS7nn23B5MGVL082c3F-72Gv7lI3EiqEh1pPop3oUzjqZ_IsHoD/exec",
+  SHEETDB_URL: "https://sheetdb.io/api/v1/n47r4uzqhdwmx",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwO_YEePNTtncutDBZrSmqeB1af-mai693-IG4DeO-mhoNzyIW_tMwjkcB833Q96sMZ/exec",
   SHEET_URL: "https://docs.google.com/spreadsheets/d/1C7fd-YnyeYN9uzcdyInPAuLfXCpQ_Cf_lBpvaBfeRUE/edit",
   USERS: {"adia":"Adia","diabou":"Diabou","joanne":"Joanne"},
 };
@@ -399,9 +400,16 @@ function playBip() {
 
 // ── API CALLS ─────────────────────────────────────────
 async function callScript(action, body) {
-  // Apps Script ne lit pas le body POST cross-origin → on passe tout en GET params
+  // Push vers Google Sheet via SheetDB (CORS natif)
+  if (action === 'push') {
+    return pushToSheetDB(body);
+  }
+  // Lecture du Sheet via SheetDB
+  if (action === 'getTasks') {
+    return getFromSheetDB();
+  }
+  // Whisper + GPT via Apps Script (GET params pour éviter CORS)
   const payload = { ...body, token: CONFIG.TOKEN };
-  // Pour la transcription (audio en base64) on garde POST car trop long pour URL
   if (action === 'transcribe') {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=transcribe&token=' + encodeURIComponent(CONFIG.TOKEN), {
       method: 'POST',
@@ -410,11 +418,49 @@ async function callScript(action, body) {
     });
     return res.json();
   }
+  // analyze via GET params
   const url = CONFIG.APPS_SCRIPT_URL
     + '?action=' + action
     + '&d=' + encodeURIComponent(JSON.stringify(payload));
   const res = await fetch(url, { method: 'GET' });
   return res.json();
+}
+
+// ── SHEETDB : Push une ligne ──────────────────────────
+async function pushToSheetDB(body) {
+  const tasks = body.tasks || [];
+  const author = body.author || 'Anonyme';
+  const now = new Date();
+  const date = now.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric'})
+    + ' ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+
+  const rows = tasks.map(t => ({
+    Date: date,
+    Contributeur: author,
+    Tâche: t.text || '',
+    Statut: 'À faire'
+  }));
+
+  const res = await fetch(CONFIG.SHEETDB_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: rows })
+  });
+  const d = await res.json();
+  return { success: true, added: rows.length };
+}
+
+// ── SHEETDB : Lire les tâches ─────────────────────────
+async function getFromSheetDB() {
+  const res = await fetch(CONFIG.SHEETDB_URL + '?limit=50&sort_by=Date&sort_order=desc');
+  const rows = await res.json();
+  const tasks = (Array.isArray(rows) ? rows : []).map(r => ({
+    date: r['Date'] || '',
+    author: r['Contributeur'] || '',
+    text: r['Tâche'] || '',
+    status: r['Statut'] || ''
+  }));
+  return { success: true, tasks };
 }
 
 // ── MODE CONDUITE ─────────────────────────────────────
