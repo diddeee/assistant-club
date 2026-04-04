@@ -251,60 +251,42 @@ const CONFIG = {
 </div>
 
 <!-- MODE NORMAL -->
-<div id="normalMode">
-  <div class="grid">
-    <div class="col">
-      <div class="label">01 — Note vocale</div>
-      <div class="rec-center">
-        <button class="rec-btn" id="recBtn" onclick="toggleNormal()">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/>
-          </svg>
-        </button>
-        <div class="wave-row" id="waveRow">
-          <div class="bar" style="height:5px"></div><div class="bar" style="height:11px"></div>
-          <div class="bar" style="height:4px"></div><div class="bar" style="height:17px"></div>
-          <div class="bar" style="height:7px"></div><div class="bar" style="height:21px"></div>
-          <div class="bar" style="height:5px"></div><div class="bar" style="height:13px"></div>
-          <div class="bar" style="height:9px"></div><div class="bar" style="height:19px"></div>
-          <div class="bar" style="height:4px"></div><div class="bar" style="height:11px"></div>
-          <div class="bar" style="height:6px"></div>
-        </div>
-        <div class="pill" id="statusPill">Appuyez pour parler</div>
-      </div>
-      <div class="label">02 — Transcription</div>
-      <div class="transcript empty" id="transcriptEl">Votre note apparaîtra ici...</div>
-      <div class="author-row">
-        <span style="font-size:11px;color:var(--muted)">Auteur :</span>
-        <span class="a-badge" id="authorBadge">—</span>
-      </div>
-      <button class="btn-primary" id="analyzeBtn" onclick="analyze()" disabled>
-        <span class="spin" id="spin1" style="display:none"></span>
-        <span id="analyzeLbl">Analyser avec Claude →</span>
-      </button>
-    </div>
+<div id="normalMode" style="display:none;flex-direction:column;align-items:center;padding:28px 24px;gap:24px;max-width:600px;margin:0 auto">
 
-    <div class="col">
-      <div class="tasks-header">
-        <div class="label" style="margin-bottom:0">03 — Idées extraites</div>
-        <span class="count" id="countBadge">0 idée</span>
-      </div>
-      <div id="taskList"><div class="empty">Enregistrez une note pour générer des idées</div></div>
-      <button class="btn-outline" id="pushBtn" onclick="pushToSheet()" disabled>
-        <span class="spin" id="spin2" style="display:none"></span>
-        <span id="pushLbl">↗ Envoyer dans le Google Sheet</span>
-      </button>
-    </div>
-
-    <div class="feed-section">
-      <div class="tasks-header">
-        <div class="label" style="margin-bottom:0">04 — Feed équipe (session)</div>
-        <span class="count" id="feedCount">0 idée</span>
-      </div>
-      <div id="feedList"><div class="empty">Les idées de l'équipe apparaîtront ici</div></div>
+  <!-- Enregistrement -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">
+    <div class="drive-status" id="normalStatus">Prête à enregistrer</div>
+    <button class="big-btn" id="recBtnNormal" onclick="toggleNormal()">
+      <svg class="big-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/>
+      </svg>
+      <span style="font-size:11px;color:var(--muted)" id="recBtnLbl">Appuyer pour parler</span>
+    </button>
+    <div class="drive-wave" id="normalWave">
+      <div class="nbar" style="height:5px"></div><div class="nbar" style="height:10px"></div>
+      <div class="nbar" style="height:6px"></div><div class="nbar" style="height:16px"></div>
+      <div class="nbar" style="height:8px"></div><div class="nbar" style="height:20px"></div>
+      <div class="nbar" style="height:5px"></div><div class="nbar" style="height:14px"></div>
+      <div class="nbar" style="height:9px"></div><div class="nbar" style="height:18px"></div>
     </div>
   </div>
+
+  <!-- Tâches extraites (après analyse) -->
+  <div id="normalResultCard" style="display:none;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;flex-direction:column;gap:8px">
+    <div class="label" style="margin-bottom:4px">Tâches extraites</div>
+    <div id="normalTaskList"></div>
+  </div>
+
+  <!-- Backlog du Sheet -->
+  <div style="width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="label" style="margin-bottom:0">Backlog équipe</div>
+      <span class="count" id="feedCount">—</span>
+    </div>
+    <div id="feedList"><div class="empty">Chargement...</div></div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -364,9 +346,10 @@ function setUser(name) {
 function switchMode(mode) {
   currentMode = mode;
   document.getElementById('driveMode').style.display = mode === 'drive' ? 'flex' : 'none';
-  document.getElementById('normalMode').style.display = mode === 'normal' ? 'block' : 'none';
+  document.getElementById('normalMode').style.display = mode === 'normal' ? 'flex' : 'none';
   document.getElementById('btnDrive').classList.toggle('active', mode === 'drive');
   document.getElementById('btnNormal').classList.toggle('active', mode === 'normal');
+  if (mode === 'normal') loadSheetTasks();
 }
 
 // ── AUDIO HELPERS ─────────────────────────────────────
@@ -441,7 +424,7 @@ async function startDriveRecord() {
     document.getElementById('bigBtn').classList.add('recording');
     document.getElementById('driveStatus').textContent = 'Enregistrement...';
     document.getElementById('driveStatus').className = 'drive-status rec';
-    document.getElementById('bigBtnLbl').textContent = 'Relâcher pour envoyer';
+    document.getElementById('bigBtnLbl').textContent = 'Appuyer pour arrêter';
     document.getElementById('driveHint').style.opacity = '0';
     document.getElementById('resultCard').classList.remove('show');
     startWave('.dbar');
@@ -465,7 +448,7 @@ function runDriveDemo() {
   document.getElementById('bigBtn').classList.add('recording');
   document.getElementById('driveStatus').textContent = 'Enregistrement...';
   document.getElementById('driveStatus').className = 'drive-status rec';
-  document.getElementById('bigBtnLbl').textContent = 'Relâcher pour envoyer';
+  document.getElementById('bigBtnLbl').textContent = 'Appuyer pour arrêter';
   startWave('.dbar');
   setTimeout(() => {
     stopDriveRecord();
@@ -554,20 +537,14 @@ async function startNormalRecord() {
     mr.onstop = processNormalAudio;
     mr.start(250);
     isRecording = true;
-    document.getElementById('recBtn').classList.add('on');
-    setPill('Enregistrement...','recording');
-    startWave('.bar');
+    document.getElementById('recBtnNormal').classList.add('recording');
+    document.getElementById('normalStatus').textContent = 'Enregistrement...';
+    document.getElementById('normalStatus').className = 'drive-status rec';
+    document.getElementById('recBtnLbl').textContent = 'Appuyer pour arrêter';
+    document.getElementById('normalResultCard').style.display = 'none';
+    startWave('.nbar');
   } catch(e) {
-    setTimeout(() => {
-      isRecording = false;
-      document.getElementById('recBtn').classList.remove('on');
-      stopWave('.bar',[5,11,4,17,7,21,5,13,9,19,4,11,6]);
-      setTranscript(DEMOS[Math.floor(Math.random()*DEMOS.length)]);
-    }, 2500);
-    isRecording = true;
-    document.getElementById('recBtn').classList.add('on');
-    setPill('Enregistrement...','recording');
-    startWave('.bar');
+    runNormalDemo();
   }
 }
 
@@ -577,72 +554,78 @@ function stopNormalRecord() {
     mediaRecorder.stream.getTracks().forEach(t => t.stop());
   }
   isRecording = false;
-  document.getElementById('recBtn').classList.remove('on');
-  stopWave('.bar',[5,11,4,17,7,21,5,13,9,19,4,11,6]);
+  document.getElementById('recBtnNormal').classList.remove('recording');
+  stopWave('.nbar', [5,10,6,16,8,20,5,14,9,18]);
+}
+
+function runNormalDemo() {
+  isRecording = true;
+  document.getElementById('recBtnNormal').classList.add('recording');
+  document.getElementById('normalStatus').textContent = 'Enregistrement...';
+  document.getElementById('normalStatus').className = 'drive-status rec';
+  document.getElementById('recBtnLbl').textContent = 'Appuyer pour arrêter';
+  startWave('.nbar');
+  setTimeout(() => {
+    stopNormalRecord();
+    processNormalWithText(DEMOS[Math.floor(Math.random() * DEMOS.length)]);
+  }, 2500);
 }
 
 async function processNormalAudio() {
   isRecording = false;
-  document.getElementById('recBtn').classList.remove('on');
-  stopWave('.bar',[5,11,4,17,7,21,5,13,9,19,4,11,6]);
-  setPill('Transcription...','');
+  document.getElementById('recBtnNormal').classList.remove('recording');
+  stopWave('.nbar', [5,10,6,16,8,20,5,14,9,18]);
+  document.getElementById('normalStatus').textContent = 'Transcription...';
+  document.getElementById('normalStatus').className = 'drive-status processing';
   try {
     const blob = new Blob(audioChunks, { type: currentMime });
     const base64 = await blobToBase64(blob);
     const d = await callScript('transcribe', { audio: base64, mimeType: currentMime });
     if (!d.success) throw new Error(d.error);
-    setTranscript(d.text);
+    await processNormalWithText(d.text);
   } catch(e) {
-    setTranscript(DEMOS[Math.floor(Math.random()*DEMOS.length)]);
+    await processNormalWithText(DEMOS[0]);
   }
 }
 
-function setTranscript(txt) {
-  currentTranscript = txt;
-  const el = document.getElementById('transcriptEl');
-  el.textContent = txt; el.classList.remove('empty');
-  setPill('Transcription prête ✓','done');
-  document.getElementById('analyzeBtn').disabled = false;
-}
-
-function setPill(txt, cls) {
-  const p = document.getElementById('statusPill');
-  p.textContent = txt;
-  p.className = 'pill' + (cls ? ' '+cls : '');
-}
-
-async function analyze() {
-  if (!currentTranscript) return;
-  document.getElementById('spin1').style.display = 'block';
-  document.getElementById('analyzeLbl').textContent = 'Analyse...';
-  document.getElementById('analyzeBtn').disabled = true;
+async function processNormalWithText(text) {
+  currentTranscript = text;
+  document.getElementById('normalStatus').textContent = 'Analyse...';
   try {
-    const d = await callScript('analyze', { transcript: currentTranscript });
+    const d = await callScript('analyze', { transcript: text });
     if (!d.success) throw new Error(d.error);
     currentTasks = d.tasks || [];
   } catch(e) {
-    currentTasks = currentTranscript.split(/[.,;!?]+/).map(s=>s.trim()).filter(s=>s.length>15).slice(0,5)
-      .map(s=>({text:s.charAt(0).toUpperCase()+s.slice(1),priority:'medium',category:'Autre'}));
+    currentTasks = text.split(/[.,;!?]+/).map(s => s.trim()).filter(s => s.length > 15).slice(0,4)
+      .map(s => ({ text: s.charAt(0).toUpperCase()+s.slice(1) }));
   }
-  renderTasks();
-  document.getElementById('spin1').style.display = 'none';
-  document.getElementById('analyzeLbl').textContent = 'Analyser avec Claude →';
-  document.getElementById('analyzeBtn').disabled = false;
-  document.getElementById('pushBtn').disabled = false;
+
+  document.getElementById('normalStatus').textContent = 'Envoi...';
+  try {
+    await callScript('push', { author: userName, tasks: currentTasks });
+  } catch(e) {}
+
+  playBip();
+  showNormalResult();
+  loadSheetTasks();
 }
 
-function renderTasks() {
-  const list = document.getElementById('taskList');
-  document.getElementById('countBadge').textContent = `${currentTasks.length} idée${currentTasks.length>1?'s':''}`;
-  if (!currentTasks.length) { list.innerHTML = '<div class="empty">Aucune idée détectée</div>'; return; }
+function showNormalResult() {
+  const card = document.getElementById('normalResultCard');
+  const list = document.getElementById('normalTaskList');
   list.innerHTML = currentTasks.map(t => `
-    <div class="task-card">
-      <div class="pdot p-${t.priority==='high'?'high':t.priority==='medium'?'med':'low'}"></div>
-      <div class="tbody">
-        <div class="ttxt">${t.text}</div>
-        <div class="tmeta"><span class="tag tcat">${t.category}</span><span class="tag t${t.priority==='high'?'h':t.priority==='medium'?'m':'l'}">${t.priority}</span></div>
-      </div>
+    <div class="result-item">
+      <div class="rdot rd-med"></div>
+      <div class="rtext">${t.text}</div>
     </div>`).join('');
+  card.style.display = 'flex';
+  document.getElementById('normalStatus').textContent = '✓ Envoyé';
+  document.getElementById('normalStatus').className = 'drive-status done';
+  document.getElementById('recBtnLbl').textContent = 'Appuyer pour parler';
+  setTimeout(() => {
+    document.getElementById('normalStatus').textContent = 'Prête à enregistrer';
+    document.getElementById('normalStatus').className = 'drive-status';
+  }, 4000);
 }
 
 async function pushToSheet() {
@@ -651,14 +634,15 @@ async function pushToSheet() {
   document.getElementById('pushLbl').textContent = 'Envoi...';
   document.getElementById('pushBtn').disabled = true;
   try {
-    await callScript('push', { author: userName, transcript: currentTranscript, tasks: currentTasks });
+    const d = await callScript('push', { author: userName, tasks: currentTasks });
+    if (!d.success) throw new Error(d.error);
     const now = new Date();
     currentTasks.forEach(t => feedItems.unshift({
       time: now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
-      author: userName, text: t.text, priority: t.priority
+      author: userName, text: t.text
     }));
     renderFeed();
-    showToast(`${currentTasks.length} idée${currentTasks.length>1?'s':''} envoyée${currentTasks.length>1?'s':''} ✓`,'ok');
+    showToast(`${currentTasks.length} tâche${currentTasks.length>1?'s':''} envoyée${currentTasks.length>1?'s':''} ✓`,'ok');
     currentTasks = []; currentTranscript = '';
     document.getElementById('taskList').innerHTML = '<div class="empty">Note envoyée ! Parlez à nouveau.</div>';
     document.getElementById('transcriptEl').textContent = 'Votre note apparaîtra ici...';
@@ -666,24 +650,46 @@ async function pushToSheet() {
     document.getElementById('countBadge').textContent = '0 idée';
     document.getElementById('analyzeBtn').disabled = true;
     setPill('Appuyez pour parler','');
+    // Recharger le backlog
+    loadSheetTasks();
   } catch(e) {
-    showToast("Erreur d'envoi",'err');
+    showToast("Erreur d'envoi — vérifiez l'URL Apps Script",'err');
+    console.error(e);
   }
   document.getElementById('spin2').style.display = 'none';
   document.getElementById('pushLbl').textContent = '↗ Envoyer dans le Google Sheet';
   document.getElementById('pushBtn').disabled = false;
 }
 
+// ── CHARGEMENT DES TÂCHES DU SHEET ───────────────────
+async function loadSheetTasks() {
+  try {
+    const d = await callScript('getTasks', {});
+    if (!d.success || !d.tasks) return;
+    const list = document.getElementById('feedList');
+    const count = document.getElementById('feedCount');
+    const tasks = d.tasks;
+    count.textContent = `${tasks.length} tâche${tasks.length>1?'s':''}`;
+    if (!tasks.length) { list.innerHTML = '<div class="empty">Aucune tâche dans le backlog</div>'; return; }
+    list.innerHTML = tasks.map(t => `
+      <div class="feed-item">
+        <span class="ftime">${t.date || ''}</span>
+        <span class="fauthor">${t.author || ''}</span>
+        <span class="ftext">${t.text || ''}</span>
+        <span class="tag" style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surface2);color:var(--muted)">${t.status || ''}</span>
+      </div>`).join('');
+  } catch(e) { console.error('loadSheetTasks:', e); }
+}
+
 function renderFeed() {
   const list = document.getElementById('feedList');
-  document.getElementById('feedCount').textContent = `${feedItems.length} idée${feedItems.length>1?'s':''}`;
-  if (!feedItems.length) { list.innerHTML = '<div class="empty">Aucune idée partagée</div>'; return; }
+  document.getElementById('feedCount').textContent = `${feedItems.length} tâche${feedItems.length>1?'s':''}`;
+  if (!feedItems.length) { list.innerHTML = '<div class="empty">Aucune tâche partagée</div>'; return; }
   list.innerHTML = feedItems.slice(0,20).map(f => `
     <div class="feed-item">
       <span class="ftime">${f.time}</span>
       <span class="fauthor">${f.author}</span>
       <span class="ftext">${f.text}</span>
-      <span class="tag t${f.priority==='high'?'h':f.priority==='medium'?'m':'l'}">${f.priority}</span>
     </div>`).join('');
 }
 
