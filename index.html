@@ -193,9 +193,9 @@ header{
 
 <script>
 const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwdwtwDCCA1XQz4CRhz0Yxs99BVdOAKT7-RNRUPmupBjZwaVJPyGN6JRSaJzBu8Nn4s/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwO_YEePNTtncutDBZrSmqeB1af-mai693-IG4DeO-mhoNzyIW_tMwjkcB833Q96sMZ/exec",
   SHEET_URL: "https://docs.google.com/spreadsheets/d/1C7fd-YnyeYN9uzcdyInPAuLfXCpQ_Cf_lBpvaBfeRUE/edit",
-  TOKEN: "6,12,5,18,8,22,6,14,10,20,5,12,7,16",
+  TOKEN: "capsule2024tww",
   USERS: {"adia":"Adia","diabou":"Diabou","joanne":"Joanne"},
 };
 </script>
@@ -402,8 +402,8 @@ function playBip() {
 async function callScript(action, body) {
   const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=' + action, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ ...body, token: CONFIG.TOKEN })
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...body, action: action, token: CONFIG.TOKEN })
   });
   return res.json();
 }
