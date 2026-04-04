@@ -193,7 +193,7 @@ header{
 
 <script>
 const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwEByVjGAyd9iA_so7_evG8bXmRVGcOwE_Pqpr5GS22y1ASqnbHf9qOlyr-KOrsjGyN/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwdwtwDCCA1XQz4CRhz0Yxs99BVdOAKT7-RNRUPmupBjZwaVJPyGN6JRSaJzBu8Nn4s/exec",
   SHEET_URL: "https://docs.google.com/spreadsheets/d/1C7fd-YnyeYN9uzcdyInPAuLfXCpQ_Cf_lBpvaBfeRUE/edit",
   TOKEN: "6,12,5,18,8,22,6,14,10,20,5,12,7,16",
   USERS: {"adia":"Adia","diabou":"Diabou","joanne":"Joanne"},
@@ -672,10 +672,9 @@ async function loadSheetTasks() {
     if (!tasks.length) { list.innerHTML = '<div class="empty">Aucune tâche dans le backlog</div>'; return; }
     list.innerHTML = tasks.map(t => `
       <div class="feed-item">
-        <span class="ftime">${t.date || ''}</span>
+        <span class="ftime">${t.date ? t.date.split(' ')[0] : ''}</span>
         <span class="fauthor">${t.author || ''}</span>
         <span class="ftext">${t.text || ''}</span>
-        <span class="tag" style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surface2);color:var(--muted)">${t.status || ''}</span>
       </div>`).join('');
   } catch(e) { console.error('loadSheetTasks:', e); }
 }
